@@ -8,7 +8,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 
-public class GraphPath
+public class GraphPath_e
 {
     //Inner class to represent a node
     public static class Node
@@ -27,7 +27,11 @@ public class GraphPath
         {
             String[] parts = t.toString().split("\t");
             this.id = parts[0];
-            this.neighbours = parts[1];
+			if (parts[1].equals(""))
+				this.neighbours = null;
+			else
+				this.neighbours = parts[1];
+
             if (parts.length<3 || parts[2].equals(""))
                 this.distance = -1;
             else 
@@ -70,18 +74,18 @@ public class GraphPath
 			if (n.getState().equals("C"))
 			{
 				//Output the node with its state changed to Done
-				context.write(new Text(n.getId()), new Text(n.getNeighbours()+"\t"+n.getDistance()+"\t"+"D"));
+				context.write(new Text(n.getId()), new Text(n.getId()+"\t"+n.getNeighbours()+"\t"+n.getDistance()+"\t"+"D"));
 				for (String neighbour:n.getNeighbours().split(","))
 				{
 					//output each neighbour as a Currently precessing node
 					//Increment the distance by 1; it is one link further away
-					context.write(new Text(neighbour), new Text("\t"+(n.getDistance()+1)+"\tC"));
+					context.write(new Text(neighbour), new Text(neighbour+"\t"+"\t"+(n.getDistance()+1)+"\tC"));
 				}
 			}
 			else
 			{
 				//output a pending node unchanged
-				context.write(new Text(n.getId()), new Text(n.getNeighbours()+"\t"+n.getDistance()+"\t"+n.getState()));
+				context.write(new Text(n.getId()), new Text(n.getId()+"\t"+n.getNeighbours()+"\t"+n.getDistance()+"\t"+n.getState()));
 			}
 		}
 	}
@@ -96,7 +100,7 @@ public class GraphPath
 			String state = "P";
 			for (Text t:values)
 			{
-				Node n = new Node(key, t);
+				Node n = new Node(t);
 				if ( n.getState().equals("D"))
 				{
 					//a done node should be the final output; ignore the remaining values
@@ -118,7 +122,7 @@ public class GraphPath
 					state = n.getState();
 			}
 			//output a new node representation from the collected parts context parts
-			context.write( key, new Text( neighbours+"\t"+distance+"\t"+state));
+			context.write(key, new Text(neighbours+"\t"+distance+"\t"+state));
 		}
 	}
 
@@ -126,7 +130,7 @@ public class GraphPath
 	{
 		Configuration conf = new Configuration();
 		Job job = new Job(conf, "graph path");
-		job.setJarByClass(GraphPath.class);
+		job.setJarByClass(GraphPath_e.class);
 		job.setMapperClass(GraphPathMapper.class);
 		job.setReducerClass(GraphPathReducer.class);
 		job.setOutputKeyClass(Text.class);
